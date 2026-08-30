@@ -3,7 +3,7 @@ name: Profile Screenshot2
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "* * * * *"
 
 permissions:
   contents: write
@@ -343,8 +343,8 @@ jobs:
           )
 
           new_text, count = re.subn(
-              r"<VNC=[^>\r\n]*>",
-              "<VNC=" + url + ">",
+              r"\[VNC\]\([^)]*\)",
+              "[VNC](" + url + ")",
               text,
               count=1
           )
