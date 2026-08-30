@@ -1,0 +1,42 @@
+GITHUB ACTIONS DESKTOP STATUS
+
+STATUS ONLINE
+
+WORKFLOW
+Profile Screenshot2
+
+STARTED
+2026-08-30 09:57:11 UTC
+
+CLOUDFLARE TUNNEL
+https://info-reliability-multiple-acre.trycloudflare.com/vnc.html?autoconnect=true&resize=remote
+
+ORIGINAL NOVNC
+http://172.203.254.215:6080/vnc.html?autoconnect=true&resize=remote
+
+ORIGINAL VNC
+tcp://172.203.254.215:5900
+
+DESKTOP
+OS Ubuntu
+DISPLAY Xvfb :99
+WINDOW MANAGER Fluxbox
+TERMINAL Xterm
+VNC x11vnc
+NOVNC websockify
+VNC PORT 5900
+NOVNC PORT 6080
+
+VNC AUTHENTICATION
+DISABLED
+
+SECURITY
+The desktop is publicly accessible.
+Anyone with the public URL may be able to interact with it.
+Do not place secrets or credentials in this environment.
+
+LIFETIME
+The desktop exists while the GitHub Actions job is running.
+
+LAST UPDATED
+2026-08-30 09:57:11 UTC
