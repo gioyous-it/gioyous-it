@@ -1,0 +1,143 @@
+name: Profile Screenshot2
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install desktop
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            fluxbox \
+            xterm \
+            lolcat \
+            imagemagick \
+            xvfb \
+            xdotool \
+            fortune-mod
+
+      - name: Start X display
+        run: |
+          Xvfb :99 -screen 0 1280x720x24 &
+          echo $! > /tmp/xvfb.pid
+          sleep 2
+
+      - name: Start Fluxbox
+        env:
+          DISPLAY: :99
+        run: |
+          fluxbox &
+          sleep 2
+
+      - name: Open Xterm
+        env:
+          DISPLAY: :99
+        run: |
+          xterm \
+            -title "gioyous.it • GitHub Actions Screenshot" \
+            -geometry 105x32+20+20 \
+            -fa "Monospace" \
+            -fs 15 \
+            -bg black \
+            -fg white \
+            -e bash -c '
+              clear
+
+              echo
+              echo "=============================================================="
+              echo "              gioyous.it • GitHub Actions"
+              echo "=============================================================="
+              echo
+
+              echo "  WORKFLOW"
+              echo "  --------"
+              echo "  Profile Screenshot"
+              echo
+
+              echo "  ENVIRONMENT"
+              echo "  -----------"
+              echo "  OS:       Ubuntu"
+              echo "  Display:  Xvfb :99"
+              echo "  WM:       Fluxbox"
+              echo "  Terminal: Xterm"
+              echo
+
+              echo "  THIS SCREENSHOT"
+              echo "  ---------------"
+              echo "  ✓ X server started"
+              echo "  ✓ Fluxbox started"
+              echo "  ✓ Xterm started"
+              echo "  ✓ Screenshot is being displayed"
+              echo "  ✓ This screen has already been captured"
+              echo
+
+              echo "  TIMESTAMP"
+              echo "  ---------"
+              date "+  %Y-%m-%d %H:%M:%S %Z" | lolcat
+
+              echo
+              echo "  RANDOM UNIX WISDOM"
+              echo "  ------------------"
+              fortune 2>/dev/null | head -n 3 | lolcat || true
+
+              echo
+              echo "  STATUS: SCREENSHOT READY"
+              echo
+              echo "=============================================================="
+              echo "  Generated automatically by GitHub Actions"
+              echo "=============================================================="
+
+              sleep 30
+            ' &
+
+          echo "Waiting for Xterm..."
+
+          for i in {1..20}; do
+            if xdotool search --name "gioyous.it • GitHub Actions Screenshot" >/dev/null 2>&1; then
+              echo "Xterm found!"
+              break
+            fi
+            sleep 1
+          done
+
+          xdotool search --name "gioyous.it • GitHub Actions Screenshot"
+
+          sleep 3
+
+      - name: Capture desktop
+        env:
+          DISPLAY: :99
+        run: |
+          import -window root 0.png
+
+      - name: Verify screenshot
+        run: |
+          file 0.png
+          identify 0.png
+
+      - name: Commit screenshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add 0.png
+
+          if git diff --cached --quiet; then
+            echo "Screenshot did not change."
+          else
+            git commit -m "chore: update profile screenshot"
+            git push
+          fi
