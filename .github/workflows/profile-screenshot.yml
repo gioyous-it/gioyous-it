@@ -17,56 +17,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install desktop and VNC
+      - name: Install desktop
         run: |
           sudo apt-get update
-
-          sudo apt-get install -y \
-            fluxbox \
-            xterm \
-            lolcat \
-            imagemagick \
-            xvfb \
-            xdotool \
-            fortune-mod \
-            x11vnc \
-            novnc \
-            websockify \
-            curl
+          sudo apt-get install -y fluxbox xterm lolcat imagemagick xvfb xdotool fortune-mod x11vnc novnc websockify curl
 
       - name: Start X display
         run: |
-          Xvfb :99 -screen 0 1280x720x24 &
-          echo "$!" > /tmp/xvfb.pid
-
+          Xvfb :99 -screen 0 1280x720x24 > /tmp/xvfb.log 2>&1 &
+          echo $! > /tmp/xvfb.pid
           sleep 2
-
-          if ! kill -0 "$(cat /tmp/xvfb.pid)" 2>/dev/null; then
-            echo "Xvfb failed to start."
-            exit 1
-          fi
+          kill -0 "$(cat /tmp/xvfb.pid)"
 
       - name: Start Fluxbox
         env:
           DISPLAY: :99
         run: |
           fluxbox > /tmp/fluxbox.log 2>&1 &
-          echo "$!" > /tmp/fluxbox.pid
-
+          echo $! > /tmp/fluxbox.pid
           sleep 2
+          kill -0 "$(cat /tmp/fluxbox.pid)"
 
-          if ! kill -0 "$(cat /tmp/fluxbox.pid)" 2>/dev/null; then
-            echo "Fluxbox failed to start."
-            cat /tmp/fluxbox.log || true
-            exit 1
-          fi
-
-      - name: Open Xterm
+      - name: Start Xterm
         env:
           DISPLAY: :99
         run: |
           xterm \
-            -title "gioyous.it • GitHub Actions Desktop" \
+            -title "gioyous.it GitHub Actions Desktop" \
             -geometry 105x32+20+20 \
             -fa "Monospace" \
             -fs 15 \
@@ -74,53 +51,40 @@ jobs:
             -fg white \
             -e bash -c '
               clear
-
-              echo
               echo "=============================================================="
-              echo "              gioyous.it • GitHub Actions"
+              echo "              gioyous.it GitHub Actions"
               echo "=============================================================="
               echo
-
-              echo "  WORKFLOW"
-              echo "  --------"
-              echo "  Profile Screenshot2"
+              echo "WORKFLOW"
+              echo "Profile Screenshot2"
               echo
-
-              echo "  ENVIRONMENT"
-              echo "  -----------"
-              echo "  OS:       Ubuntu"
-              echo "  Display:  Xvfb :99"
-              echo "  WM:       Fluxbox"
-              echo "  Terminal: Xterm"
-              echo "  VNC:      x11vnc"
-              echo "  noVNC:    websockify"
+              echo "ENVIRONMENT"
+              echo "OS Ubuntu"
+              echo "Display Xvfb :99"
+              echo "Window Manager Fluxbox"
+              echo "Terminal Xterm"
+              echo "VNC x11vnc"
+              echo "noVNC websockify"
               echo
-
-              echo "  THIS DESKTOP"
-              echo "  ------------"
-              echo "  ✓ X server started"
-              echo "  ✓ Fluxbox started"
-              echo "  ✓ Xterm started"
-              echo "  ✓ VNC server started"
-              echo "  ✓ noVNC started"
-              echo "  ✓ Screenshot captured"
-              echo "  ✓ Public tunnel starting"
+              echo "STATUS"
+              echo "X server running"
+              echo "Fluxbox running"
+              echo "Xterm running"
+              echo "VNC server running"
+              echo "noVNC running"
+              echo "Screenshot captured"
+              echo "Cloudflare Tunnel running"
               echo
-
-              echo "  TIMESTAMP"
-              echo "  ---------"
-              date "+  %Y-%m-%d %H:%M:%S %Z" | lolcat
-
+              echo "TIMESTAMP"
+              date "+%Y-%m-%d %H:%M:%S %Z" | lolcat
               echo
-              echo "  RANDOM UNIX WISDOM"
-              echo "  ------------------"
+              echo "RANDOM UNIX WISDOM"
               fortune 2>/dev/null | head -n 3 | lolcat || true
-
               echo
-              echo "  STATUS: DESKTOP READY"
+              echo "STATUS SCREENSHOT READY"
               echo
               echo "=============================================================="
-              echo "  Generated automatically by GitHub Actions"
+              echo "Generated automatically by GitHub Actions"
               echo "=============================================================="
 
               while true; do
@@ -128,47 +92,32 @@ jobs:
               done
             ' &
 
-          echo "Waiting for Xterm..."
-
           for i in {1..20}; do
-            if xdotool search \
-              --name "gioyous.it • GitHub Actions Desktop" \
-              >/dev/null 2>&1; then
-
-              echo "Xterm found!"
-              break
+            if xdotool search --name "gioyous.it GitHub Actions Desktop" >/dev/null 2>&1; then
+              echo "Xterm found"
+              exit 0
             fi
-
             sleep 1
           done
 
-          if ! xdotool search \
-            --name "gioyous.it • GitHub Actions Desktop" \
-            >/dev/null 2>&1; then
+          echo "Xterm was not found"
+          exit 1
 
-            echo "Xterm was not found."
-            exit 1
-          fi
-
-          sleep 3
-
-      - name: Capture profile screenshot
+      - name: Capture desktop
         env:
           DISPLAY: :99
         run: |
-          import -window root 0.png
+          import -display :99 -window root 0.png
 
       - name: Verify screenshot
         run: |
           file 0.png
           identify 0.png
 
-      - name: Start passwordless VNC
+      - name: Start VNC
         env:
           DISPLAY: :99
         run: |
-          echo "Starting passwordless x11vnc..."
-
           x11vnc \
             -display :99 \
             -rfbport 5900 \
@@ -182,82 +131,55 @@ jobs:
             -noxdamage \
             > /tmp/x11vnc.log 2>&1 &
 
-          echo "$!" > /tmp/x11vnc.pid
-
+          echo $! > /tmp/x11vnc.pid
           sleep 3
 
           if ! kill -0 "$(cat /tmp/x11vnc.pid)" 2>/dev/null; then
-            echo "x11vnc failed to start."
+            echo "x11vnc failed"
             cat /tmp/x11vnc.log || true
             exit 1
           fi
 
-          echo "VNC server is running."
-
       - name: Start noVNC
         run: |
-          echo "Starting noVNC..."
-
           websockify \
             --web=/usr/share/novnc \
             6080 \
             127.0.0.1:5900 \
             > /tmp/websockify.log 2>&1 &
 
-          echo "$!" > /tmp/websockify.pid
-
+          echo $! > /tmp/websockify.pid
           sleep 3
 
           if ! kill -0 "$(cat /tmp/websockify.pid)" 2>/dev/null; then
-            echo "websockify failed to start."
+            echo "websockify failed"
             cat /tmp/websockify.log || true
             exit 1
           fi
 
-          echo "noVNC is running."
-
-      - name: Verify noVNC locally
+      - name: Verify noVNC
         run: |
-          echo "Testing local noVNC server..."
-
-          curl \
-            --fail \
-            --silent \
-            --show-error \
+          curl --fail --silent --show-error \
             http://127.0.0.1:6080/vnc.html \
             >/dev/null
 
-          echo "Local noVNC server is responding."
+          echo "noVNC is working"
 
-      - name: Detect original runner address
+      - name: Detect original address
         id: original
         run: |
           PUBLIC_IP="$(curl -4 -fsS https://api.ipify.org || true)"
 
           if [ -n "$PUBLIC_IP" ]; then
-            echo "public_ip=$PUBLIC_IP" >> "$GITHUB_OUTPUT"
-
-            echo \
-              "vnc=tcp://$PUBLIC_IP:5900" \
-              >> "$GITHUB_OUTPUT"
-
-            echo \
-              "novnc=http://$PUBLIC_IP:6080/vnc.html?autoconnect=true&resize=remote" \
-              >> "$GITHUB_OUTPUT"
-
-            echo "Detected public runner IP: $PUBLIC_IP"
+            echo "vnc=tcp://$PUBLIC_IP:5900" >> "$GITHUB_OUTPUT"
+            echo "novnc=http://$PUBLIC_IP:6080/vnc.html?autoconnect=true&resize=remote" >> "$GITHUB_OUTPUT"
           else
-            echo "public_ip=" >> "$GITHUB_OUTPUT"
             echo "vnc=N/A" >> "$GITHUB_OUTPUT"
             echo "novnc=N/A" >> "$GITHUB_OUTPUT"
-
-            echo "Could not determine public IP."
           fi
 
       - name: Install cloudflared
         run: |
-          echo "Downloading cloudflared..."
-
           curl \
             --fail \
             --location \
@@ -267,31 +189,24 @@ jobs:
             --output /tmp/cloudflared.deb
 
           sudo dpkg -i /tmp/cloudflared.deb
-
           cloudflared --version
 
-      - name: Start Cloudflare Quick Tunnel
+      - name: Start Cloudflare Tunnel
         run: |
-          rm -f /tmp/cloudflared.log
-
-          echo "Starting Cloudflare Quick Tunnel..."
-
           cloudflared tunnel \
             --url http://127.0.0.1:6080 \
             --no-autoupdate \
             --loglevel info \
             > /tmp/cloudflared.log 2>&1 &
 
-          echo "$!" > /tmp/cloudflared.pid
-
-          echo "Waiting for the REAL Cloudflare URL..."
+          echo $! > /tmp/cloudflared.pid
 
           TUNNEL_URL=""
 
           for i in {1..60}; do
             TUNNEL_URL="$(
               grep -oE \
-                'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' \
+                'https://[A-Za-z0-9.-]+\.trycloudflare\.com' \
                 /tmp/cloudflared.log \
                 | head -n 1 \
                 || true
@@ -305,123 +220,71 @@ jobs:
           done
 
           if [ -z "$TUNNEL_URL" ]; then
+            echo "Cloudflare Tunnel URL was not found"
             echo
-            echo "Cloudflare did not provide a Quick Tunnel URL."
-            echo
-            echo "================ CLOUDFLARE LOG ================"
             cat /tmp/cloudflared.log || true
-            echo "=================================================="
             exit 1
           fi
 
-          echo "Cloudflare Tunnel:"
-          echo "$TUNNEL_URL"
-
           echo "TUNNEL_URL=$TUNNEL_URL" >> "$GITHUB_ENV"
 
-      - name: Verify Cloudflare Tunnel
-        run: |
-          TUNNEL_NOVNC="${TUNNEL_URL}/vnc.html?autoconnect=true&resize=remote"
+          echo "Cloudflare Tunnel URL:"
+          echo "$TUNNEL_URL"
 
-          echo "Testing:"
-          echo "$TUNNEL_NOVNC"
-
-          HTTP_CODE="$(
-            curl \
-              --silent \
-              --output /dev/null \
-              --write-out "%{http_code}" \
-              --max-time 20 \
-              "$TUNNEL_NOVNC" \
-              || true
-          )"
-
-          echo "HTTP status: $HTTP_CODE"
-
-          case "$HTTP_CODE" in
-            2*|3*)
-              echo "Cloudflare Tunnel is responding."
-              ;;
-            *)
-              echo "WARNING: Tunnel did not return a normal HTTP response yet."
-              echo
-              echo "Cloudflare log:"
-              cat /tmp/cloudflared.log || true
-              ;;
-          esac
-
-      - name: Create STATUS.md
+      - name: Create STATUS.txt
         env:
           ORIGINAL_VNC: ${{ steps.original.outputs.vnc }}
           ORIGINAL_NOVNC: ${{ steps.original.outputs.novnc }}
         run: |
           TUNNEL_NOVNC="${TUNNEL_URL}/vnc.html?autoconnect=true&resize=remote"
+          TIMESTAMP="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
-          cat > STATUS.md <<EOF
-# GitHub Actions Desktop Status
+          cat > STATUS.txt <<EOF
+GITHUB ACTIONS DESKTOP STATUS
 
-**Status** 🟢 ONLINE
+STATUS ONLINE
 
-**Workflow** \`Profile Screenshot2\`
+WORKFLOW
+Profile Screenshot2
 
-**Started** $(date -u "+%Y-%m-%d %H:%M:%S UTC")
+STARTED
+${TIMESTAMP}
 
-## 🌐 Access
+CLOUDFLARE TUNNEL
+${TUNNEL_NOVNC}
 
-### Cloudflare Tunnel
+ORIGINAL NOVNC
+${ORIGINAL_NOVNC}
 
-[Open the live desktop]($TUNNEL_NOVNC)
+ORIGINAL VNC
+${ORIGINAL_VNC}
 
-**URL** $TUNNEL_NOVNC
+DESKTOP
+OS Ubuntu
+DISPLAY Xvfb :99
+WINDOW MANAGER Fluxbox
+TERMINAL Xterm
+VNC x11vnc
+NOVNC websockify
+VNC PORT 5900
+NOVNC PORT 6080
 
-### Original noVNC endpoint
+VNC AUTHENTICATION
+DISABLED
 
-$ORIGINAL_NOVNC
+SECURITY
+The desktop is publicly accessible.
+Anyone with the public URL may be able to interact with it.
+Do not place secrets or credentials in this environment.
 
-### Original VNC endpoint
+LIFETIME
+The desktop exists while the GitHub Actions job is running.
 
-$ORIGINAL_VNC
-
-> The Cloudflare URL above is the intended public access method.
->
-> The original endpoint is shown separately and is only a best-effort runner address. GitHub-hosted runners normally do not accept arbitrary inbound connections.
-
-## 🖥️ Desktop
-
-- OS: Ubuntu
-- Display Xvfb 99
-- Window manager Fluxbox
-- Terminal Xterm
-- VNC server x11vnc
-- VNC port 5900
-- noVNC/websockify port 6080
-- VNC authentication: disabled
-
-## ☁️ Tunnel
-
-- Provider Cloudflare
-- Type Quick Tunnel
-- Origin \`http://127.0.0.1:6080\`
-- Public hostname \`$TUNNEL_URL\`
-
-## ⚠️ Security
-
-This desktop is intentionally exposed without a VNC password.
-
-Anyone who obtains the public Cloudflare URL may be able to interact with the desktop.
-
-Do not place secrets, tokens, private keys, credentials, or private files in this environment.
-
-## ⏱️ Lifetime
-
-This page represents the current GitHub Actions job.
-
-The desktop disappears when the workflow stops or the runner is terminated.
-
-Last updated: $(date -u "+%Y-%m-%d %H:%M:%S UTC")
+LAST UPDATED
+${TIMESTAMP}
 EOF
 
-          echo "STATUS.md created."
+          echo "STATUS.txt created"
 
       - name: Update README VNC marker
         env:
@@ -435,52 +298,43 @@ EOF
           path = Path("README.md")
 
           if not path.exists():
-              print("README.md does not exist.")
+              print("README.md does not exist")
               raise SystemExit(0)
 
           text = path.read_text(encoding="utf-8")
 
-          tunnel_url = (
+          url = (
               os.environ["TUNNEL_URL"]
               + "/vnc.html?autoconnect=true&resize=remote"
           )
 
-          pattern = r"<VNC=[^>\r\n]*>"
-
-          replacement = f"<VNC={tunnel_url}>"
-
           new_text, count = re.subn(
-              pattern,
-              replacement,
+              r"<VNC=[^>\r\n]*>",
+              "<VNC=" + url + ">",
               text,
-              count=1,
+              count=1
           )
 
           if count == 0:
-              print("No <VNC=...> marker found.")
-              print("README.md was not modified.")
+              print("No VNC marker found")
               raise SystemExit(0)
 
           path.write_text(new_text, encoding="utf-8")
 
-          print("Updated README.md VNC marker.")
+          print("README VNC marker updated")
           PY
 
-      - name: Commit screenshot and status
+      - name: Commit files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add 0.png
-          git add STATUS.md
-          git add README.md
+          git add 0.png STATUS.txt README.md
 
           if git diff --cached --quiet; then
-            echo "No repository changes."
+            echo "Nothing changed"
           else
-            git commit \
-              -m "chore: update desktop screenshot and status"
-
+            git commit -m "chore: update desktop status"
             git push
           fi
 
@@ -491,54 +345,32 @@ EOF
         run: |
           echo
           echo "=============================================================="
-          echo "                 GIOYOUS.IT LIVE DESKTOP"
+          echo "GIOYOUS.IT LIVE DESKTOP"
           echo "=============================================================="
           echo
-          echo "Cloudflare noVNC:"
+          echo "CLOUDFLARE TUNNEL"
           echo "${TUNNEL_URL}/vnc.html?autoconnect=true&resize=remote"
           echo
-          echo "Original noVNC:"
+          echo "ORIGINAL NOVNC"
           echo "$ORIGINAL_NOVNC"
           echo
-          echo "Original VNC:"
+          echo "ORIGINAL VNC"
           echo "$ORIGINAL_VNC"
           echo
           echo "=============================================================="
 
       - name: Keep desktop alive
         run: |
-          echo "Desktop is LIVE."
-          echo
+          echo "Desktop is live"
           echo "Cloudflare:"
           echo "${TUNNEL_URL}/vnc.html?autoconnect=true&resize=remote"
-          echo
-          echo "Keeping the GitHub Actions runner alive."
 
           while true; do
-            if ! kill -0 "$(cat /tmp/xvfb.pid)" 2>/dev/null; then
-              echo "Xvfb stopped."
-              exit 1
-            fi
-
-            if ! kill -0 "$(cat /tmp/fluxbox.pid)" 2>/dev/null; then
-              echo "Fluxbox stopped."
-              exit 1
-            fi
-
-            if ! kill -0 "$(cat /tmp/x11vnc.pid)" 2>/dev/null; then
-              echo "x11vnc stopped."
-              exit 1
-            fi
-
-            if ! kill -0 "$(cat /tmp/websockify.pid)" 2>/dev/null; then
-              echo "websockify stopped."
-              exit 1
-            fi
-
-            if ! kill -0 "$(cat /tmp/cloudflared.pid)" 2>/dev/null; then
-              echo "cloudflared stopped."
-              exit 1
-            fi
+            kill -0 "$(cat /tmp/xvfb.pid)" || exit 1
+            kill -0 "$(cat /tmp/fluxbox.pid)" || exit 1
+            kill -0 "$(cat /tmp/x11vnc.pid)" || exit 1
+            kill -0 "$(cat /tmp/websockify.pid)" || exit 1
+            kill -0 "$(cat /tmp/cloudflared.pid)" || exit 1
 
             sleep 60
           done
