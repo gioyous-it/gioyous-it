@@ -27,9 +27,9 @@ The workflow periodically generates a fresh screenshot:
 ## 🐍 Contributions
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./output/github-snake-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="./output/github-snake.svg">
-  <img alt="GitHub contribution snake" src="https://raw.githubusercontent.com/gioyous-it/gioyous-it/blob/output/github-snake.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gioyous-it/gioyous-it/refs/heads/output/github-snake-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/gioyous-it/gioyous-it/refs/heads/output/github-snake.svg">
+  <img alt="GitHub contribution snake" src="https://raw.githubusercontent.com/gioyous-it/gioyous-it/refs/heads/output/github-snake.svg">
 </picture>
 
 ---
