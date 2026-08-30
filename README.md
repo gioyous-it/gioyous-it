@@ -6,22 +6,7 @@
 
 > 💻 Linux enjoyer • Open-source tinkerer • Professional computer breaker
 
-## 🐧 GitHub Actions Desktop
-
-This profile runs a tiny graphical Linux environment in GitHub Actions:
-
-**Xorg → Fluxbox → Xterm → lolcat**
-
-The workflow periodically generates a fresh screenshot:
-
-![GitHub Actions desktop](./0.png)
-
-You can control It:
-## Live Desktop
-
-[VNC](https://dual-conversation-ranked-president.trycloudflare.com/vnc.html?autoconnect=true&resize=remote)
-
-[See what It's doing](./STATUS.txt)
+![GitHub Actions desktop](https://raw.githubusercontent.com/gioyous-it/actionbox-vm/refs/heads/main/0.png)
 
 ## 🛠️ Technologies
 
