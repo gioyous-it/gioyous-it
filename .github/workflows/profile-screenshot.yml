@@ -3,7 +3,7 @@ name: Profile Screenshot2
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 */6 * * *"
 
 permissions:
   contents: write
@@ -11,13 +11,13 @@ permissions:
 jobs:
   screenshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 340
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install desktop
+      - name: Install desktop and VNC
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -27,7 +27,12 @@ jobs:
             imagemagick \
             xvfb \
             xdotool \
-            fortune-mod
+            fortune-mod \
+            x11vnc \
+            novnc \
+            websockify \
+            curl \
+            jq
 
       - name: Start X display
         run: |
@@ -64,7 +69,7 @@ jobs:
 
               echo "  WORKFLOW"
               echo "  --------"
-              echo "  Profile Screenshot"
+              echo "  Profile Screenshot2"
               echo
 
               echo "  ENVIRONMENT"
@@ -73,6 +78,8 @@ jobs:
               echo "  Display:  Xvfb :99"
               echo "  WM:       Fluxbox"
               echo "  Terminal: Xterm"
+              echo "  VNC:      x11vnc"
+              echo "  noVNC:    websockify"
               echo
 
               echo "  THIS SCREENSHOT"
@@ -80,7 +87,8 @@ jobs:
               echo "  ✓ X server started"
               echo "  ✓ Fluxbox started"
               echo "  ✓ Xterm started"
-              echo "  ✓ Screenshot is being displayed"
+              echo "  ✓ VNC server started"
+              echo "  ✓ noVNC started"
               echo "  ✓ This screen has already been captured"
               echo
 
@@ -94,13 +102,15 @@ jobs:
               fortune 2>/dev/null | head -n 3 | lolcat || true
 
               echo
-              echo "  STATUS: SCREENSHOT READY"
+              echo "  STATUS: DESKTOP READY"
               echo
               echo "=============================================================="
               echo "  Generated automatically by GitHub Actions"
               echo "=============================================================="
 
-              sleep 30
+              while true; do
+                sleep 60
+              done
             ' &
 
           echo "Waiting for Xterm..."
@@ -117,6 +127,132 @@ jobs:
 
           sleep 3
 
+      - name: Start passwordless VNC server
+        env:
+          DISPLAY: :99
+        run: |
+          x11vnc \
+            -display :99 \
+            -rfbport 5900 \
+            -forever \
+            -shared \
+            -nopw \
+            -listen 0.0.0.0 \
+            -xkb \
+            > /tmp/x11vnc.log 2>&1 &
+
+          echo $! > /tmp/x11vnc.pid
+
+          sleep 3
+
+          if ! pgrep -af x11vnc; then
+            echo "x11vnc failed to start"
+            cat /tmp/x11vnc.log
+            exit 1
+          fi
+
+      - name: Start noVNC
+        run: |
+          websockify \
+            --web=/usr/share/novnc/ \
+            6080 \
+            localhost:5900 \
+            > /tmp/novnc.log 2>&1 &
+
+          echo $! > /tmp/websockify.pid
+
+          sleep 3
+
+          if ! pgrep -af websockify; then
+            echo "websockify failed to start"
+            cat /tmp/novnc.log
+            exit 1
+          fi
+
+      - name: Detect original runner address
+        id: address
+        run: |
+          PUBLIC_IP="$(curl -4 -fsS https://api.ipify.org || true)"
+
+          if [ -n "$PUBLIC_IP" ]; then
+            echo "public_ip=$PUBLIC_IP" >> "$GITHUB_OUTPUT"
+            echo "original_vnc=tcp://$PUBLIC_IP:5900" >> "$GITHUB_OUTPUT"
+            echo "original_novnc=http://$PUBLIC_IP:6080/vnc.html?autoconnect=true&resize=remote" >> "$GITHUB_OUTPUT"
+          else
+            echo "public_ip=" >> "$GITHUB_OUTPUT"
+            echo "original_vnc=N/A" >> "$GITHUB_OUTPUT"
+            echo "original_novnc=N/A" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Start Cloudflare Tunnel
+        run: |
+          curl -fsSL \
+            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb \
+            -o /tmp/cloudflared.deb
+
+          sudo dpkg -i /tmp/cloudflared.deb
+
+          cloudflared tunnel \
+            --url http://127.0.0.1:6080 \
+            --no-autoupdate \
+            > /tmp/cloudflared.log 2>&1 &
+
+          echo $! > /tmp/cloudflared.pid
+
+          echo "Waiting for Cloudflare Tunnel URL..."
+
+          for i in {1..30}; do
+            TUNNEL_URL="$(grep -oE 'https://[-a-zA-Z0-9]+\.trycloudflare\.com' /tmp/cloudflared.log | head -n 1 || true)"
+
+            if [ -n "$TUNNEL_URL" ]; then
+              echo "TUNNEL_URL=$TUNNEL_URL" >> "$GITHUB_ENV"
+              echo "Tunnel URL: $TUNNEL_URL"
+              break
+            fi
+
+            sleep 2
+          done
+
+          if [ -z "${TUNNEL_URL:-}" ]; then
+            echo "Cloudflare Tunnel URL was not detected."
+            cat /tmp/cloudflared.log
+            exit 1
+          fi
+
+      - name: Build public URLs
+        id: urls
+        run: |
+          ORIGINAL_VNC="${{ steps.address.outputs.original_vnc }}"
+          ORIGINAL_NOVNC="${{ steps.address.outputs.original_novnc }}"
+
+          TUNNEL_NOVNC="${TUNNEL_URL}/vnc.html?autoconnect=true&resize=remote"
+
+          echo "original_vnc=$ORIGINAL_VNC" >> "$GITHUB_OUTPUT"
+          echo "original_novnc=$ORIGINAL_NOVNC" >> "$GITHUB_OUTPUT"
+          echo "tunnel_novnc=$TUNNEL_NOVNC" >> "$GITHUB_OUTPUT"
+
+          {
+            echo
+            echo "=============================================================="
+            echo " PUBLIC DESKTOP ACCESS"
+            echo "=============================================================="
+            echo
+            echo " Original VNC:"
+            echo " $ORIGINAL_VNC"
+            echo
+            echo " Original noVNC:"
+            echo " $ORIGINAL_NOVNC"
+            echo
+            echo " Cloudflare Tunnel:"
+            echo " $TUNNEL_NOVNC"
+            echo
+            echo " NOTE:"
+            echo " The Cloudflare URL is the intended browser-accessible link."
+            echo " The original address is shown separately and is NOT fabricated."
+            echo
+            echo "=============================================================="
+          } | tee /tmp/access-info.txt
+
       - name: Capture desktop
         env:
           DISPLAY: :99
@@ -128,16 +264,126 @@ jobs:
           file 0.png
           identify 0.png
 
-      - name: Commit screenshot
+      - name: Update STATUS.md and README VNC marker
+        env:
+          ORIGINAL_VNC: ${{ steps.urls.outputs.original_vnc }}
+          ORIGINAL_NOVNC: ${{ steps.urls.outputs.original_novnc }}
+          TUNNEL_NOVNC: ${{ steps.urls.outputs.tunnel_novnc }}
+        run: |
+          cat > STATUS.md <<EOF
+# GitHub Actions Desktop Status
+
+**Status:** 🟢 ONLINE
+
+**Workflow:** \`Profile Screenshot2\`
+
+**Started:** $(date -u "+%Y-%m-%d %H:%M:%S UTC")
+
+## Access
+
+### Cloudflare Tunnel — Browser
+[$TUNNEL_NOVNC]($TUNNEL_NOVNC)
+
+### Original noVNC
+\`$ORIGINAL_NOVNC\`
+
+### Original VNC
+\`$ORIGINAL_VNC\`
+
+## Desktop
+
+- OS: Ubuntu
+- Display: Xvfb :99
+- Window manager: Fluxbox
+- Terminal: Xterm
+- VNC: x11vnc
+- noVNC: websockify
+- VNC authentication: disabled
+
+> The Cloudflare Tunnel URL is the intended public browser URL.
+> The original address is displayed separately when the runner environment provides one.
+EOF
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import os
+
+          path = Path("README.md")
+
+          if not path.exists():
+              print("README.md does not exist; skipping README update.")
+              raise SystemExit(0)
+
+          text = path.read_text()
+
+          tunnel = os.environ["TUNNEL_NOVNC"]
+
+          # Supported marker:
+          # <VNC=linkgoeshere>
+          #
+          # It can appear anywhere in README.md.
+          pattern = r"<VNC=[^>\r\n]*>"
+
+          replacement = f"<VNC={tunnel}>"
+
+          new_text, count = re.subn(pattern, replacement, text, count=1)
+
+          if count:
+              path.write_text(new_text)
+              print("Updated existing <VNC=...> marker in README.md.")
+          else:
+              print("No <VNC=...> marker found in README.md; leaving README.md unchanged.")
+          PY
+
+      - name: Commit screenshot and status
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add 0.png
+          git add 0.png STATUS.md README.md
 
           if git diff --cached --quiet; then
-            echo "Screenshot did not change."
+            echo "No repository changes."
           else
-            git commit -m "chore: update profile screenshot"
+            git commit -m "chore: update desktop screenshot and status"
             git push
           fi
+
+      - name: Keep desktop alive
+        run: |
+          echo "Desktop is now live."
+          echo "Cloudflare Tunnel:"
+          echo "${{ steps.urls.outputs.tunnel_novnc }}"
+          echo
+          echo "Original noVNC:"
+          echo "${{ steps.urls.outputs.original_novnc }}"
+          echo
+          echo "Original VNC:"
+          echo "${{ steps.urls.outputs.original_vnc }}"
+          echo
+          echo "Keeping the runner alive until the job is stopped."
+
+          while true; do
+            if ! pgrep -x Xvfb >/dev/null; then
+              echo "Xvfb stopped."
+              exit 1
+            fi
+
+            if ! pgrep -x x11vnc >/dev/null; then
+              echo "x11vnc stopped."
+              exit 1
+            fi
+
+            if ! pgrep -x websockify >/dev/null; then
+              echo "websockify stopped."
+              exit 1
+            fi
+
+            if ! pgrep -x cloudflared >/dev/null; then
+              echo "cloudflared stopped."
+              exit 1
+            fi
+
+            sleep 60
+          done
