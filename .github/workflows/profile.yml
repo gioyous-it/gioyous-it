@@ -1,0 +1,77 @@
+name: Profile Screenshot
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install desktop
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fluxbox xterm lolcat imagemagick
+
+      - name: Start Xorg
+        run: |
+          Xvfb :99 -screen 0 1280x720x24 &
+          echo $! > /tmp/xvfb.pid
+          sleep 2
+          export DISPLAY=:99
+
+      - name: Start Fluxbox
+        run: |
+          export DISPLAY=:99
+          fluxbox &
+          sleep 2
+
+      - name: Start Xterm
+        run: |
+          export DISPLAY=:99
+
+          xterm \
+            -geometry 100x30+20+20 \
+            -fa Monospace \
+            -fs 16 \
+            -bg black \
+            -fg white \
+            -e bash -c '
+              clear
+              printf "\n"
+              printf "  " 
+              date "+%Y-%m-%d %H:%M:%S %Z" | lolcat
+              printf "\n\n"
+              printf "  GitHub Actions • gioyous.it\n"
+              printf "\n"
+              sleep 5
+            ' &
+
+          sleep 7
+
+      - name: Capture screen
+        run: |
+          export DISPLAY=:99
+          import -window root 0.png
+
+      - name: Commit screenshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add 0.png
+
+          if git diff --cached --quiet; then
+            echo "Screenshot unchanged."
+          else
+            git commit -m "chore: update profile screenshot"
+            git push
+          fi
