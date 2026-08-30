@@ -19,7 +19,7 @@ The workflow periodically generates a fresh screenshot:
 You can control It:
 ## Live Desktop
 
-[VNC](https://between-disclosure-dressed-won.trycloudflare.com/vnc.html?autoconnect=true&resize=remote)
+[VNC](https://dual-conversation-ranked-president.trycloudflare.com/vnc.html?autoconnect=true&resize=remote)
 
 [See what It's doing](./STATUS.txt)
 
