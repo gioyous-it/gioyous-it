@@ -16,6 +16,13 @@ The workflow periodically generates a fresh screenshot:
 
 ![GitHub Actions desktop](./0.png)
 
+You can control It:
+## Live Desktop
+
+<VNC=placeholder>
+
+[See what It's doing](./STATUS.txt)
+
 ## 🛠️ Technologies
 
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
