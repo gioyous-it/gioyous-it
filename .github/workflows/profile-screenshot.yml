@@ -360,11 +360,11 @@ jobs:
           cat > STATUS.md <<EOF
 # GitHub Actions Desktop Status
 
-**Status:** 🟢 ONLINE
+**Status** 🟢 ONLINE
 
-**Workflow:** \`Profile Screenshot2\`
+**Workflow** \`Profile Screenshot2\`
 
-**Started:** $(date -u "+%Y-%m-%d %H:%M:%S UTC")
+**Started** $(date -u "+%Y-%m-%d %H:%M:%S UTC")
 
 ## 🌐 Access
 
@@ -372,7 +372,7 @@ jobs:
 
 [Open the live desktop]($TUNNEL_NOVNC)
 
-**URL:** $TUNNEL_NOVNC
+**URL** $TUNNEL_NOVNC
 
 ### Original noVNC endpoint
 
@@ -389,20 +389,20 @@ $ORIGINAL_VNC
 ## 🖥️ Desktop
 
 - OS: Ubuntu
-- Display: Xvfb :99
-- Window manager: Fluxbox
-- Terminal: Xterm
-- VNC server: x11vnc
-- VNC port: 5900
-- noVNC/websockify port: 6080
+- Display Xvfb 99
+- Window manager Fluxbox
+- Terminal Xterm
+- VNC server x11vnc
+- VNC port 5900
+- noVNC/websockify port 6080
 - VNC authentication: disabled
 
 ## ☁️ Tunnel
 
-- Provider: Cloudflare
-- Type: Quick Tunnel
-- Origin: \`http://127.0.0.1:6080\`
-- Public hostname: \`$TUNNEL_URL\`
+- Provider Cloudflare
+- Type Quick Tunnel
+- Origin \`http://127.0.0.1:6080\`
+- Public hostname \`$TUNNEL_URL\`
 
 ## ⚠️ Security
 
