@@ -29,7 +29,7 @@ The workflow periodically generates a fresh screenshot:
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./output/github-snake-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="./output/github-snake.svg">
-  <img alt="GitHub contribution snake" src="./output/github-snake.svg">
+  <img alt="GitHub contribution snake" src="https://raw.githubusercontent.com/gioyous-it/gioyous-it/blob/output/github-snake.svg">
 </picture>
 
 ---
