@@ -20,14 +20,30 @@ jobs:
       - name: Install desktop
         run: |
           sudo apt-get update
-          sudo apt-get install -y fluxbox xterm lolcat imagemagick xvfb xdotool fortune-mod x11vnc novnc websockify curl
+          sudo apt-get install -y \
+            fluxbox \
+            xterm \
+            lolcat \
+            imagemagick \
+            xvfb \
+            xdotool \
+            fortune-mod \
+            x11vnc \
+            novnc \
+            websockify \
+            curl
 
       - name: Start X display
         run: |
           Xvfb :99 -screen 0 1280x720x24 > /tmp/xvfb.log 2>&1 &
           echo $! > /tmp/xvfb.pid
           sleep 2
-          kill -0 "$(cat /tmp/xvfb.pid)"
+
+          if ! kill -0 "$(cat /tmp/xvfb.pid)" 2>/dev/null; then
+            echo "Xvfb failed"
+            cat /tmp/xvfb.log || true
+            exit 1
+          fi
 
       - name: Start Fluxbox
         env:
@@ -36,7 +52,12 @@ jobs:
           fluxbox > /tmp/fluxbox.log 2>&1 &
           echo $! > /tmp/fluxbox.pid
           sleep 2
-          kill -0 "$(cat /tmp/fluxbox.pid)"
+
+          if ! kill -0 "$(cat /tmp/fluxbox.pid)" 2>/dev/null; then
+            echo "Fluxbox failed"
+            cat /tmp/fluxbox.log || true
+            exit 1
+          fi
 
       - name: Start Xterm
         env:
@@ -51,6 +72,7 @@ jobs:
             -fg white \
             -e bash -c '
               clear
+
               echo "=============================================================="
               echo "              gioyous.it GitHub Actions"
               echo "=============================================================="
@@ -73,7 +95,7 @@ jobs:
               echo "VNC server running"
               echo "noVNC running"
               echo "Screenshot captured"
-              echo "Cloudflare Tunnel running"
+              echo "Cloudflare Tunnel starting"
               echo
               echo "TIMESTAMP"
               date "+%Y-%m-%d %H:%M:%S %Z" | lolcat
@@ -93,10 +115,13 @@ jobs:
             ' &
 
           for i in {1..20}; do
-            if xdotool search --name "gioyous.it GitHub Actions Desktop" >/dev/null 2>&1; then
+            if xdotool search \
+              --name "gioyous.it GitHub Actions Desktop" \
+              >/dev/null 2>&1; then
               echo "Xterm found"
               exit 0
             fi
+
             sleep 1
           done
 
@@ -107,14 +132,17 @@ jobs:
         env:
           DISPLAY: :99
         run: |
-          import -display :99 -window root 0.png
+          import \
+            -display :99 \
+            -window root \
+            0.png
 
       - name: Verify screenshot
         run: |
           file 0.png
           identify 0.png
 
-      - name: Start VNC
+      - name: Start passwordless VNC
         env:
           DISPLAY: :99
         run: |
@@ -159,7 +187,10 @@ jobs:
 
       - name: Verify noVNC
         run: |
-          curl --fail --silent --show-error \
+          curl \
+            --fail \
+            --silent \
+            --show-error \
             http://127.0.0.1:6080/vnc.html \
             >/dev/null
 
@@ -228,7 +259,7 @@ jobs:
 
           echo "TUNNEL_URL=$TUNNEL_URL" >> "$GITHUB_ENV"
 
-          echo "Cloudflare Tunnel URL:"
+          echo "Cloudflare Tunnel URL"
           echo "$TUNNEL_URL"
 
       - name: Create STATUS.txt
@@ -239,52 +270,55 @@ jobs:
           TUNNEL_NOVNC="${TUNNEL_URL}/vnc.html?autoconnect=true&resize=remote"
           TIMESTAMP="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
-          cat > STATUS.txt <<EOF
-GITHUB ACTIONS DESKTOP STATUS
-
-STATUS ONLINE
-
-WORKFLOW
-Profile Screenshot2
-
-STARTED
-${TIMESTAMP}
-
-CLOUDFLARE TUNNEL
-${TUNNEL_NOVNC}
-
-ORIGINAL NOVNC
-${ORIGINAL_NOVNC}
-
-ORIGINAL VNC
-${ORIGINAL_VNC}
-
-DESKTOP
-OS Ubuntu
-DISPLAY Xvfb :99
-WINDOW MANAGER Fluxbox
-TERMINAL Xterm
-VNC x11vnc
-NOVNC websockify
-VNC PORT 5900
-NOVNC PORT 6080
-
-VNC AUTHENTICATION
-DISABLED
-
-SECURITY
-The desktop is publicly accessible.
-Anyone with the public URL may be able to interact with it.
-Do not place secrets or credentials in this environment.
-
-LIFETIME
-The desktop exists while the GitHub Actions job is running.
-
-LAST UPDATED
-${TIMESTAMP}
-EOF
+          printf '%s\n' \
+            'GITHUB ACTIONS DESKTOP STATUS' \
+            '' \
+            'STATUS ONLINE' \
+            '' \
+            'WORKFLOW' \
+            'Profile Screenshot2' \
+            '' \
+            'STARTED' \
+            "$TIMESTAMP" \
+            '' \
+            'CLOUDFLARE TUNNEL' \
+            "$TUNNEL_NOVNC" \
+            '' \
+            'ORIGINAL NOVNC' \
+            "$ORIGINAL_NOVNC" \
+            '' \
+            'ORIGINAL VNC' \
+            "$ORIGINAL_VNC" \
+            '' \
+            'DESKTOP' \
+            'OS Ubuntu' \
+            'DISPLAY Xvfb :99' \
+            'WINDOW MANAGER Fluxbox' \
+            'TERMINAL Xterm' \
+            'VNC x11vnc' \
+            'NOVNC websockify' \
+            'VNC PORT 5900' \
+            'NOVNC PORT 6080' \
+            '' \
+            'VNC AUTHENTICATION' \
+            'DISABLED' \
+            '' \
+            'SECURITY' \
+            'The desktop is publicly accessible.' \
+            'Anyone with the public URL may be able to interact with it.' \
+            'Do not place secrets or credentials in this environment.' \
+            '' \
+            'LIFETIME' \
+            'The desktop exists while the GitHub Actions job is running.' \
+            '' \
+            'LAST UPDATED' \
+            "$TIMESTAMP" \
+            > STATUS.txt
 
           echo "STATUS.txt created"
+          echo "--------------------------------"
+          cat STATUS.txt
+          echo "--------------------------------"
 
       - name: Update README VNC marker
         env:
@@ -329,7 +363,9 @@ EOF
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add 0.png STATUS.txt README.md
+          git add 0.png
+          git add STATUS.txt
+          git add README.md
 
           if git diff --cached --quiet; then
             echo "Nothing changed"
@@ -362,8 +398,9 @@ EOF
       - name: Keep desktop alive
         run: |
           echo "Desktop is live"
-          echo "Cloudflare:"
+          echo "Cloudflare"
           echo "${TUNNEL_URL}/vnc.html?autoconnect=true&resize=remote"
+          echo
 
           while true; do
             kill -0 "$(cat /tmp/xvfb.pid)" || exit 1
