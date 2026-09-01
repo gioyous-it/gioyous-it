@@ -6,16 +6,16 @@ WORKFLOW
 Profile Screenshot2
 
 STARTED
-2026-09-01 00:34:47 UTC
+2026-09-01 05:38:35 UTC
 
 CLOUDFLARE TUNNEL
-https://seeking-albany-metadata-arbitration.trycloudflare.com/vnc.html?autoconnect=true&resize=remote
+https://distinct-fully-broadcast-orders.trycloudflare.com/vnc.html?autoconnect=true&resize=remote
 
 ORIGINAL NOVNC
-http://68.154.54.35:6080/vnc.html?autoconnect=true&resize=remote
+http://172.208.152.212:6080/vnc.html?autoconnect=true&resize=remote
 
 ORIGINAL VNC
-tcp://68.154.54.35:5900
+tcp://172.208.152.212:5900
 
 DESKTOP
 OS Ubuntu
@@ -39,4 +39,4 @@ LIFETIME
 The desktop exists while the GitHub Actions job is running.
 
 LAST UPDATED
-2026-09-01 00:34:47 UTC
+2026-09-01 05:38:35 UTC
