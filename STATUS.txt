@@ -6,16 +6,16 @@ WORKFLOW
 Profile Screenshot2
 
 STARTED
-2026-09-15 05:49:44 UTC
+2026-09-15 10:31:08 UTC
 
 CLOUDFLARE TUNNEL
-https://teachers-promote-jill-anymore.trycloudflare.com/vnc.html?autoconnect=true&resize=remote
+https://api.trycloudflare.com/vnc.html?autoconnect=true&resize=remote
 
 ORIGINAL NOVNC
-http://64.236.200.105:6080/vnc.html?autoconnect=true&resize=remote
+http://135.232.208.132:6080/vnc.html?autoconnect=true&resize=remote
 
 ORIGINAL VNC
-tcp://64.236.200.105:5900
+tcp://135.232.208.132:5900
 
 DESKTOP
 OS Ubuntu
@@ -39,4 +39,4 @@ LIFETIME
 The desktop exists while the GitHub Actions job is running.
 
 LAST UPDATED
-2026-09-15 05:49:44 UTC
+2026-09-15 10:31:08 UTC
