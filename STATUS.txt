@@ -6,16 +6,16 @@ WORKFLOW
 Profile Screenshot2
 
 STARTED
-2026-09-22 00:00:47 UTC
+2026-09-22 04:42:54 UTC
 
 CLOUDFLARE TUNNEL
-https://cafe-associates-starts-idle.trycloudflare.com/vnc.html?autoconnect=true&resize=remote
+https://keen-enquiry-fabric-accordance.trycloudflare.com/vnc.html?autoconnect=true&resize=remote
 
 ORIGINAL NOVNC
-http://20.163.39.228:6080/vnc.html?autoconnect=true&resize=remote
+http://52.173.162.97:6080/vnc.html?autoconnect=true&resize=remote
 
 ORIGINAL VNC
-tcp://20.163.39.228:5900
+tcp://52.173.162.97:5900
 
 DESKTOP
 OS Ubuntu
@@ -39,4 +39,4 @@ LIFETIME
 The desktop exists while the GitHub Actions job is running.
 
 LAST UPDATED
-2026-09-22 00:00:47 UTC
+2026-09-22 04:42:54 UTC
